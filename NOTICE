@@ -1,0 +1,10 @@
+CollabMD
+Copyright 2026 GodModeAI2025.
+
+Architektur- und Betriebsmuster (Skill-Struktur, Planen-Vorschau-Bestätigung-Anwenden,
+Wartungssperre, Git-Teammodus mit isolierten Agenten-Kandidaten und Integritätsprüfung)
+stammen aus dem eigenen Projekt AI_first_CRM (Copyright 2026 GodModeAI2025, Apache License 2.0):
+https://github.com/GodModeAI2025/AI_first_CRM
+
+Alle Code-Dateien dieses Projekts wurden neu implementiert und verwenden ausschließlich
+die Python-Standardbibliothek.
