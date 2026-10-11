@@ -203,6 +203,40 @@ release --target RAUM --bump initial|patch|minor|major --operation-id 32-HEX
 verify  --target RAUM
 ```
 
+### `team_git.py` (Teammodus)
+
+```text
+setup     --target RAUM --actor AKTEUR --provider github|local --repo REPO [--branch BRANCHE]
+          [--github-id handle=numeric-id,…] --token-file DATEI [--session-file DATEI]
+          --content-dir VERZ --output PLAN.json
+apply     --target RAUM --plan-file PLAN.json --expect-plan-sha256 HASH
+          --token-file DATEI [--session-file DATEI]
+seed      --target RAUM --repo LOKALER-BARE-PFAD [--branch BRANCHE] --runtime VERZ
+start     --target RAUM --actor AKTEUR --runtime VERZ
+preview   --run-id LAUF --actor AKTEUR --target RAUM --runtime VERZ
+approve   --run-id LAUF --actor AKTEUR --preview-file DATEI --runtime VERZ
+submit    --run-id LAUF --actor AKTEUR --target RAUM --preview-file DATEI
+          --approval-file DATEI --runtime VERZ
+publish   --run-id LAUF --actor AKTEUR --target RAUM --runtime VERZ
+sync      --target RAUM --token-file DATEI --runtime VERZ
+read      --target RAUM
+read-run  --run-id LAUF --runtime VERZ
+cancel    --run-id LAUF --actor AKTEUR --runtime VERZ
+supersede --run-id LAUF --actor AKTEUR --target RAUM --runtime VERZ
+recover   --runtime VERZ
+cleanup   --runtime VERZ [--all]
+```
+
+Details, Vertrauensmodell und Konfliktregel: [team-mode.md](team-mode.md).
+
+### `team_integrity.py` (serverseitig, Workflow)
+
+```text
+check --worktree VERZ --base-sha 40-HEX --pr-body-file DATEI --actor-github-id ID
+```
+
+Läuft im Beratung-Workflow auf der PR: Akteurs-Abbildung, Operation-Block, Diff-Pfade, Lint, Secrets-Scan.
+
 ## Idempotenz und Operation-IDs
 
 - Jede schreibende Aktion trägt eine UUID-4 als `op` (Plan) bzw. `--operation-id` (Release).

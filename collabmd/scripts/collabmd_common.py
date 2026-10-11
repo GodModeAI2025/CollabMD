@@ -265,7 +265,8 @@ class Workspace:
     def safe_rel(self, relpath):
         pure = Path(relpath)
         if not relpath or pure.is_absolute() or ".." in pure.parts or relpath.startswith((".", "/")):
-            fail("unsafe_path", f"Pfad außerhalb des Arbeitsraums: {relpath}")
+            if not (relpath.startswith(".github/workflows/") or relpath.startswith(".github/collabmd-runtime/")):
+                fail("unsafe_path", f"Pfad außerhalb des Arbeitsraums: {relpath}")
         return self.root / relpath
 
     def post_path(self, channel_id, post_id):
@@ -322,8 +323,10 @@ def require_permission(members_doc, actor, action, ctx=None):
         minimum = "maintainer"
     elif action in ("posts.edit-other", "posts.delete-other", "posts.pin-other", "posts.unpin-other"):
         minimum = "maintainer"
-    elif action in ("release.publish", "posts.create", "channels.join", "posts.edit-self", "posts.delete-self", "posts.pin-self", "posts.unpin-self"):
+    elif action in ("release.publish", "posts.create", "channels.join", "posts.edit-self", "posts.delete-self", "posts.pin-self", "posts.unpin-self", "team.submit"):
         minimum = "contributor"
+    elif action == "team.publish":
+        minimum = "maintainer"
     else:
         minimum = "reader"
     if minimum is not None and not role_at_least(role, minimum):

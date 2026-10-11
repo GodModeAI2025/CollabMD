@@ -1,0 +1,41 @@
+name: CollabMD Team Integrity
+description: >
+  Beratender (advisory) Integritaets-Check fuer CollabMD-Team-PRs.
+  Auf GitHub Free ohne erzwungene Branch-Schutzregeln stellt dieser
+  Check Reibung und Audit bereit, keine Zwangsgrenze; die verbindliche
+  Gueltigkeitsgrenze ist das client-seitige Publish-Gate plus die
+  Bestaetigung der exakten Vorschau durch den Menschen.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  integrity:
+    if: contains(github.event.pull_request.body, 'collabmd-op/1')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - name: Checkout base ref
+        run: git fetch --no-tags --depth=1 origin refs/heads/${{ github.base_ref }}:refs/remotes/origin/${{ github.base_ref }}
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Save PR body
+        run: |
+          gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json body -q .body > /tmp/pr-body.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Integrity check
+        run: |
+          python3 .github/collabmd-runtime/team_integrity.py check \
+            --worktree . \
+            --base-sha $(git rev-parse origin/${{ github.base_ref }}) \
+            --pr-body-file /tmp/pr-body.md \
+            --actor-github-id ${{ github.event.pull_request.user.id }}
