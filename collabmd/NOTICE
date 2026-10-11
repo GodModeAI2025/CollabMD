@@ -1,0 +1,13 @@
+CollabMD — dateibasierter Kollaborationsraum als Agent-Skill
+Copyright 2026 CollabMD Contributors
+
+Diese Datei unterliegt der Apache License 2.0; siehe LICENSE.
+
+Verwandte Werk:
+- Struktur, Plan/Apply-Prinzip, Sperrenmodell und Skill-Aufbau folgen dem
+  Stil von "AI First CRM" (GodModeAI2025/AI_first_CRM, Apache License 2.0).
+  CollabMD ist eine unabhängige Implementierung ohne wiederverwendeten
+  Quellcode jenes Projekts.
+
+Keine weiteren Dritten-Komponenten: Alle gebündelten Skripte nutzen
+ausschließlich die Python-Standardbibliothek (ab Python 3.10).
