@@ -76,10 +76,11 @@ class TeamLocalTests(unittest.TestCase):
         self.assertEqual(code, 0, ap)
         code, sm = S.run("team_git.py", "submit", "--run-id", run_id, "--actor", actor,
                          "--target", self.wiki, "--preview-file", pv["preview_file"],
-                         "--approval-file", ap["approval_file"], "--runtime", self.rt_base)
+                         "--approval-file", ap["approval_file"], "--session-file", self.sess,
+                         "--runtime", self.rt_base)
         self.assertEqual(code, 0, sm)
         code, pub = S.run("team_git.py", "publish", "--run-id", run_id, "--actor", actor,
-                          "--target", self.wiki, "--runtime", self.rt_base)
+                          "--target", self.wiki, "--session-file", self.sess, "--runtime", self.rt_base)
         return code, pub
 
     def sync(self):
@@ -115,7 +116,8 @@ class TeamLocalTests(unittest.TestCase):
         self.assertEqual(code, 0, ap)
         code, sm = S.run("team_git.py", "submit", "--run-id", run_b, "--actor", "alice",
                          "--target", self.wiki, "--preview-file", pv["preview_file"],
-                         "--approval-file", ap["approval_file"], "--runtime", self.rt_base)
+                         "--approval-file", ap["approval_file"], "--session-file", self.sess,
+                         "--runtime", self.rt_base)
         self.assertEqual(code, 1)
         self.assertEqual(sm["error"], "stale_base")
         code, out = S.run("team_git.py", "supersede", "--run-id", run_b, "--actor", "alice",

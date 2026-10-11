@@ -2,7 +2,6 @@
 """Publish and verify CollabMD workspace releases."""
 import argparse
 import sys
-from pathlib import Path
 
 import collabmd_common as C
 import collab_lint
@@ -30,6 +29,7 @@ def do_release(args):
     C.verify_claim(ws, args.token_file)
     members = ws.members_doc()
     C.require_permission(members, args.actor, "release.publish")
+    C.check_auth_session(ws, "release.publish", args.actor, args.session_file)
     report = collab_lint.run_lint(ws)
     if report["errors"]:
         C.fail("lint_failed", "Lint mit Fehlern: " + "; ".join(report["errors"][:5]))
@@ -118,6 +118,7 @@ def main():
     p.add_argument("--summary", required=True)
     p.add_argument("--actor", required=True)
     p.add_argument("--token-file", required=True)
+    p.add_argument("--session-file", default=None)
     p = sub.add_parser("verify")
     p.add_argument("--target", required=True)
     args = parser.parse_args()

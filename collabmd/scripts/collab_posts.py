@@ -45,7 +45,7 @@ def read_body(args):
         C.fail("empty_body", "Post-Text ist leer")
     hits = secret_screen.scan(body)
     if hits:
-        C.fail("secrets_found", f"Post-Text enthaelt {len(hits)} moegliche Zugangsdaten")
+        C.fail("secrets_found", f"Post-Text enthält {len(hits)} mögliche Zugangsdaten")
     if not body.endswith("\n"):
         body += "\n"
     return body
@@ -86,7 +86,7 @@ def resolve_channel(ws, args, actor):
     if target.startswith("dm:"):
         other = C.validate_handle(target[3:])
         if other == actor:
-            C.fail("bad_dm", "Direkt-Kanal mit sich selbst ist ungueltig")
+            C.fail("bad_dm", "Direkt-Kanal mit sich selbst ist ungültig")
         handles = sorted([actor, other])
         channel_id = "dm-" + "-".join(handles)
         channels = ws.channels_doc()["channels"]
@@ -202,7 +202,7 @@ def plan_post_update(args, mutate, action, destructive=False, allow_archived=Fal
     require_channel_member(ws, args.channel, actor, allow_archived=allow_archived)
     relpath, meta, body = load_post(ws, args.channel, args.post)
     if meta.get("deleted") and action not in ("posts.delete",):
-        C.fail("post_deleted", "Post ist geloescht")
+        C.fail("post_deleted", "Post ist gelöscht")
     if action in ("posts.edit", "posts.delete", "posts.pin", "posts.unpin") and meta.get("author") != actor:
         C.require_permission(ws.members_doc(), actor, action + "-other")
     preconditions = {relpath: C.sha256_file(ws.root / relpath)}

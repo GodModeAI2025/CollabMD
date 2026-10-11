@@ -4,7 +4,6 @@ import argparse
 import json
 import sys
 from html import escape
-from pathlib import Path
 import re
 
 import collabmd_common as C

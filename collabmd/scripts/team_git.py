@@ -291,6 +291,7 @@ def do_submit(args):
         C.fail("team_run_actor_mismatch", "Lauf gehört zu einem anderen Akteur")
     ws = C.Workspace(args.target)
     C.require_permission(ws.members_doc(), args.actor, "team.submit")
+    C.check_auth_session(ws, "team.submit", args.actor, args.session_file)
     preview = C.read_json(args.preview_file)
     T.validate_approval(C.read_json(args.approval_file), preview["preview_sha256"], args.actor)
     config = {"branch": state["branch"], "repo": state["repo"]}
@@ -329,6 +330,7 @@ def do_publish(args):
         C.fail("team_run_not_submitted", "Lauf ist nicht submitted")
     ws = C.Workspace(args.target)
     C.require_permission(ws.members_doc(), args.actor, "team.publish")
+    C.check_auth_session(ws, "team.publish", args.actor, args.session_file)
     preview = C.read_json(state["preview_file"])
     config = {"branch": state["branch"], "repo": state["repo"]}
     current = repo_head_sha(config, state["provider"])
@@ -519,6 +521,9 @@ def main():
         if name in ("submit",):
             p.add_argument("--preview-file", required=True)
             p.add_argument("--approval-file", required=True)
+            p.add_argument("--session-file", default=None)
+        if name in ("publish",):
+            p.add_argument("--session-file", default=None)
     p = sub.add_parser("apply")
     p.add_argument("--target", required=True)
     p.add_argument("--plan-file", required=True)

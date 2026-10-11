@@ -9,18 +9,18 @@ Baue und pflege in einem vom Nutzer genannten Zielverzeichnis einen dauerhaften,
 
 ## Geteilte Git-Räume
 
-Wenn der Nutzer einen Team-/Geteilter-Git-Ablauf verlangt oder das Ziel `schema/team.json` enthält, lies [references/team-mode.md](references/team-mode.md) vollständig, bevor du etwas schreibst. Verwende den gebündelten `team_git.py`-Lifecycle. Wende normale schreibende Helfer nicht direkt auf das geteilte Klon an: die Team-Wrapper liefert ein isoliertes Ziel, einen authentifizierten Akteur und einen privaten Claim. Dieser Beta-Modus setzt vertrauenswürdige Repository-Schreiber voraus: die Rollen des Skills ersetzen keine GitHub-Zugriffsrechte. Alle Repository-Leser sehen und kopieren Daten und Historie; verlange keine Feld-Vertraulichkeit und keine vollständige Historien-Löschung.
+Wenn der Nutzer einen geteilten Git-Ablauf verlangt oder das Ziel `schema/team.json` enthält, lies [references/team-mode.md](references/team-mode.md) vollständig, bevor du etwas schreibst. Verwende den gebündelten `team_git.py`-Lifecycle. Wende normale schreibende Helfer nicht direkt auf das geteilte Klon an: der Team-Wrapper liefert ein isoliertes Ziel, einen authentifizierten Akteur und einen privaten Claim. Dieser Beta-Modus setzt vertrauenswürdige Repository-Schreiber voraus: die Rollen des Skills ersetzen keine GitHub-Zugriffsrechte. Alle Repository-Leser sehen und kopieren Daten und Historie; verspreche keine Feld-Vertraulichkeit und keine vollständige Historien-Löschung.
 
 ## Regeln, die immer gelten
 
-1. Der Nutzer spricht mit diesem Skill in natürlicher Sprache. Verlange nie, dass der Nutzer Python, einen gebündelten Skript oder eine Shell-Kommando selbst ausführt; die Helfer sind private Implementierungsdetails, die der aktive Agent ausführt und prüft.
+1. Der Nutzer spricht mit diesem Skill in natürlicher Sprache. Verlange nie, dass der Nutzer Python, ein gebündeltes Skript oder ein Shell-Kommando selbst ausführt; die Helfer sind private Implementierungsdetails, die der aktive Agent ausführt und prüft.
 2. Jeder schreibende oder wartende Durchlauf besitzt die Raumsperre für seine gesamte Lebensdauer: Hole sie vor der Inspektion des Raums, halte die Token-Datei privat (0600, außerhalb des Raums) und gib sie am Ende mit dem eigenen Token zurück. Berühre nie den Claim eines anderen Warters; zwinge eine Sperre nicht ohne ausdrückliche Freigabe.
 3. Schreibe keine kanonische Datei direkt. Posts, Kanäle, Mitglieder und Auth-Änderungen laufen über hash-gebundene Plan/Apply-Helfer; Lese-Operationen lesen nur. Jede schreibende Operation außer `init`, `cursor.set` und `graph.build` benötigt eine gültige Auth-Session.
 4. Wende nur den exakten Plan an, den der Nutzer gesehen hat, identifiziert über seinen Plan-Hash. Ein veralteter Plan (`stale_plan`) bedeutet null Schreibvorgänge und einen neuen Plan, nie einen Umweg. Destruktive Operationen (Löschen, Archivieren, Deaktivieren, Zurücksetzen) brauchen ausdrückliche Bestätigung nach der Vorschau.
 5. Erfinde keine Fakten, Handles, Inhalte oder Ereignisse. Jede Änderung benennt ihren Akteur; der Ereignislog und `meta/changes.md` sind Append-only und werden nie außerhalb der Helfer verändert.
 6. Zugangsdaten gelangen nie in den Raum oder in einen Bericht. Der Secrets-Scan lehnt Schreiboperationen mit mutmaßlichen Tokens ab (`secrets_found`); berichtete Zufallsfunde werden als `[credential removed]` redigiert. Passphrashes werden nur als PBKDF2-Hash (mit Salt) gespeichert, nie im Klartext, nie in Logs, nie in Plan-Dateien.
 7. Behalte keine absoluten, Home-relativen oder `file:`-Pfade im Raum oder in Berichten vor. Temporäre Plan- und Staging-Dateien außerhalb des Raums werden nach der Sitzung gelöscht.
-8. Berichte wahrheitsgemäß: ein bestanden Lint ist keine Qualitätsbewertung. Nenne verbleibende Warnungen, abgelehnte Operationen und offene Punkte. Ein Release bedeutet nur „von diesem Agenten zum diesem Zeitpunkt geprüft“, nicht „wahrheitsgemäß für alle“.
+8. Berichte wahrheitsgemäß: ein bestandenes Lint ist keine Qualitätsbewertung. Nenne verbleibende Warnungen, abgelehnte Operationen und offene Punkte. Ein Release bedeutet nur „von diesem Agenten zu diesem Zeitpunkt geprüft“, nicht „wahr für alle“.
 9. Standalone-Pflege hat keinen Netzwerkzugriff und keinen Hintergrundprozess. Der optionale Git-Teammodus nutzt authentifizierten Git-/GitHub-Zugang für Teilen und Integritätsprüfung, ohne einen separaten Dienst.
 
 ## Vor dem Handeln lesen
@@ -37,14 +37,14 @@ Löse alle Verträge relativ zu dieser `SKILL.md`. Das Zielverzeichnis enthält 
 
 Der Nutzer interagiert nur in natürlicher Sprache. Frage nur nach fehlenden inhaltlichen Eingaben: Zielverzeichnis, Raum-Identität, Handles, Rollen, Passphrashes (über eine private Datei), Beitragsinhalte. Der aktive Agent löst und führt alle gebündelten Helfer intern aus, validiert ihre Ergebnisse und liefert das Ergebnis als Bericht.
 
-Für jeden neuen Raum beginne, bevor Sperre oder Schreibvorgang, mit dieser Einladung (bei Bedarf übersetzt): „Bevor ich den Kollaborationsraum anlege, legen wir gemeinsam seine Identität fest: Name und Zweck, Sprache, der erste Inhaber (Handle und Name) und welche Kanäle es zu Beginn geben soll. Du wählst für dein erstes Mitglied eine Passphrase, die nur ich als Salt+Hash speichere. Erst nach deiner ausdrücklichen Bestätigung lege ich Dateien an.“ Stellt die Passphrase über eine private Datei zur Verfügung, die der Agent ausliest und nach der Sitzung löscht; nie im Gespräch wiedergeben, nie im Raum ablegen.
+Für jeden neuen Raum beginne, bevor Sperre oder Schreibvorgang, mit dieser Einladung (bei Bedarf übersetzt): „Bevor ich den Kollaborationsraum anlege, legen wir gemeinsam seine Identität fest: Name und Zweck, Sprache, der erste Inhaber (Handle und Name) und welche Kanäle es zu Beginn geben soll. Du wählst für dein erstes Mitglied eine Passphrase, die nur ich als Salt+Hash speichere. Erst nach deiner ausdrücklichen Bestätigung lege ich Dateien an.“ Der Nutzer stellt die Passphrase über eine private Datei zur Verfügung, die der Agent ausliest und nach der Sitzung löscht; nie im Gespräch wiedergeben, nie im Raum ablegen.
 
 ## Portabilität und Laufzeit
 
 Behandle das Verzeichnis, das diese `SKILL.md` enthält, als `<skill-root>`. Nehme nie an, dass das aktuelle Arbeitsverzeichnis das Skill-Verzeichnis ist, und speichere nie `<skill-root>` oder andere maschinenbezogene absolute Pfade im Raum.
 
 - Verwende Python 3.10 oder neuer; auf macOS und Linux `python3`. Die gebündelten Skripte nutzen ausschließlich die Python-Standardbibliothek.
-- Laufzeit-Eingaben dürfen überall zeigen, wo der Nutzer sie autorisiert; generierte Markdown-, JSON- und HTML-Inhalte sowie Berichts-Pfade bleiben relativ zum Raum oder zum gewählten Zielverzeichnis.
+- Laufzeit-Eingaben dürfen auf Pfade hindeuten, die der Nutzer autorisiert; generierte Markdown-, JSON- und HTML-Inhalte sowie Berichts-Pfade bleiben relativ zum Raum oder zum gewählten Zielverzeichnis.
 - Ein Cloud-Sandbox ohne das Raum-Verzeichnis auf dem Laufzeit-Rechner kann die Sperre nicht halten und darf den kanonischen Raum nicht pflegen.
 
 ## Raumsperre
@@ -55,7 +55,7 @@ Jeder schreibende oder wartende Aufruf – anlegen, ändern, Lint, Release, Quer
 <python> <skill-root>/scripts/wiki_lock.py acquire --target <raum> --owner <agent-oder-lauf-id> --operation <kurze-beschreibung> --token-file <private-laufzeitdatei>
 ```
 
-Der Befehl schreibt eine Claim-Datei nach `<raum>/.collabmd.lock/`, schreibt die private Berechtigung in eine 0600-Datei außerhalb des Raums und gibt das Token nie aus. Jede schreibende Helfer-Aufruf verlängert die Leasing-Dauer (Standard 900 s); nach einer längeren Pause `wiki_lock.py verify` oder `heartbeat` mit gleichem `--target` und `--token-file` ausführen. Meldet die Akquisition `acquired: false` mit `state: held`, hält ein anderer Wartender den Raum: stoppen und dem Nutzer Besitzer, Operation und Akquisitionszeit berichten. Nie einen fremden Claim löschen oder ersetzen, nie ein fremdes Token wiederverwenden. Gib die Sperre bei erfolgreichem Abschluss, explizitem Abbruch oder Verzicht zurück:
+Der Befehl schreibt eine Claim-Datei nach `<raum>/.collabmd.lock/`, schreibt die private Berechtigung in eine 0600-Datei außerhalb des Raums und gibt das Token nie aus. Jeder schreibende Helfer-Aufruf verlängert das Lease (Standard 900 s); nach einer längeren Pause `wiki_lock.py verify` oder `heartbeat` mit gleichem `--target` und `--token-file` ausführen. Meldet die Akquisition `acquired: false` mit `state: held`, hält ein anderer Wartender den Raum: stoppen und dem Nutzer Besitzer, Operation und Akquisitionszeitpunkt berichten. Nie einen fremden Claim löschen oder ersetzen, nie ein fremdes Token wiederverwenden. Gib die Sperre bei erfolgreichem Abschluss, explizitem Abbruch oder Verzicht zurück:
 
 ```text
 <python> <skill-root>/scripts/wiki_lock.py release --target <raum> --token-file <private-laufzeitdatei>
@@ -87,7 +87,7 @@ meta/version         aktuelle Release-Version
 meta/manifest.json   zuletzt veröffentlichtes Manifest
 meta/receipts/       Idempotenz-Belege pro Operation-ID
 graph/               generierte HTML-Views und graph.json (nie von Hand bearbeiten)
-.collabmd.lock/      Claim-Datei der Raumssperre (privat, nie im Release)
+.collabmd.lock/      Claim-Datei der Raumsperre (privat, nie im Release)
 ```
 
 ## Operationen
@@ -112,8 +112,8 @@ Jede Änderung ist ein hash-gebundener Plan mit Akteur. Der Helfer schreibt den 
 
 Für anlegen, pflegen, Lint oder Release:
 
-1. Für einen neuen Raum die Identitäts-Fragen klären und die Bestätigung einholen, bevor Sperre oder Schreibvorgang erfolgen.
-2. Die Raumssperre akquirieren und die private Token-Datei bis zur Rückgabe behalten.
+1. Für einen neuen Raum die Identitäts-Fragen klären und die Bestätigung einholen, bevor die Sperre oder ein Schreibvorgang erfolgt.
+2. Die Raumsperre akquirieren und die private Token-Datei bis zur Rückgabe behalten.
 3. `collab_lint.py lint --target <raum>` als Baseline laufen lassen und bestehende Blocker getrennt von geplanten Änderungen berichten.
 4. Den Raum inspizieren und die Anfrage klassifizieren.
 5. Den Plan mit allen Argumenten erzeugen und dem Nutzer die Vorschau zeigen: Aktion, Akteur, Ziele, destruktives Flag, `plan_sha256`. Destruktive Pläne erst nach Bestätigung anwenden.
@@ -127,8 +127,8 @@ Für anlegen, pflegen, Lint oder Release:
 
 - Ändere nie eine ursprüngliche Quelle und speichere keine Original-Binaries außerhalb von `posts/_files/`.
 - Erfinde keine Handles, Beiträge, Ereignisse oder Quellen.
-- Übersetze oder normalisiere nie Post-Inhalte beiläufig; eine Änderoperation ersetzt den ganzen Text und wird als Edit mit erhöhtem `edits`-Zähler protokolliert.
-- Lösche nie Ereignisse, die Manifest oder `meta/changes.md` außerhalb der Helfer; gelöschte Posts behalten ihren Marker `[gelöscht]` und bleiben als Historie sichtbar.
+- Übersetze oder normalisiere nie Post-Inhalte beiläufig; eine Änderungsoperation ersetzt den ganzen Text und wird als Edit mit erhöhtem `edits`-Zähler protokolliert.
+- Sätze und Strukturen wie Ereignisse, Manifest oder `meta/changes.md` ändern oder lösche nie außerhalb der Helfer; gelöschte Posts behalten ihren Marker `[gelöscht]` und bleiben als Historie sichtbar.
 - Beschreibe den Raum nicht als perfekt, nur weil das Lint besteht.
 - Speichere nie Credentials, Passphrashes im Klartext oder absolute Pfade im Raum.
 - Gehe nie davon aus, dass „private“ Kanäle vor Repository-Lesern schützen: sie schützen nur innerhalb des Skill-Ablaufs.

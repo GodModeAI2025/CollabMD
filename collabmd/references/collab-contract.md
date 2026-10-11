@@ -81,16 +81,25 @@ Jeder Helfer gibt strukturiertes JSON auf stdout aus. Bei Erfolg steht `ok: true
 | `no_auth` | Mitglied hat keinen Auth-Eintrag (keine Session möglich) |
 | `user_exists` / `user_missing` | Handle-Konflikt bzw. unbekanntes Mitglied |
 | `secrets_found` | Schreibinhalt enthält mutmaßliche Zugangsdaten |
-| `bad_handle` / `bad_channel` / `bad_post` / `bad_cursor` | Formatfehler in einer Kennung |
-| `not_member` | Akteur ist nicht Mitglied des Kanals |
-| `channel_missing` / `channel_archived` | Kanal unbekannt bzw. gesperrt |
-| `post_missing` / `post_deleted` | Post unbekannt bzw. gelöscht |
+| `invalid_handle` / `invalid_channel_id` / `invalid_post_id` / `bad_cursor` | Formatfehler in einer Kennung |
+| `not_member` / `already_member` / `last_member` | Kanal-Mitgliedschaft (fehlt / bereits da / letztes Mitglied) |
+| `channel_missing` / `channel_archived` / `channel_exists` | Kanal unbekannt / gesperrt / ID belegt |
+| `post_missing` / `post_deleted` / `post_wrong_channel` | Post unbekannt / gelöscht / falscher Kanal |
 | `bad_thread_root` | Antwort auf einen Thread-Post (Schachtel) oder unbekannte Root |
+| `bad_dm` / `bad_emoji` / `empty_body` / `empty_query` | DM-Form, Reaktions-Emoji, leeres Post- bzw. Suchfeld |
 | `not_self` | Aktion betrifft nicht den eigenen Handle (z. B. Cursor, Passwort) |
-| `claim_held` / `token_mismatch` / `claim_expired` | Sperren-Konflikte |
+| `token_file_exists` / `token_mismatch` / `claim_expired` / `no_claim` | Sperren-Konflikte (`acquire` meldet statt Fehler `state: held`/`expired`) |
+| `missing_token` | schreibende Operation ohne Claim |
+| `empty_soul` / `missing_soul` / `missing_passphrase` / `passphrase_too_short` | Init-Voraussetzungen |
+| `event_exists` | Operation bereits protokolliert (gleiche `op`) |
+| `bad_operation_id` | Release-Operation-ID ist keine 32-hex-Zeichenkette |
+| `team_not_setup` | `schema/team.json` fehlt |
+| `stale_base` | Remote-Basis weicht von der Preview-Basis ab – Publish verweigert (dann `supersede`) |
 | `lint_failed` | Lint meldet Fehler – Release verweigert |
 | `version_exists` / `missing_version` / `bad_version` | Versionsvoraussetzungen |
 | `no_release` | Kein Manifest vorhanden (verify) |
+
+Weitere Team-Modus-Codes (`team_*`, z. B. `team_run_actor_mismatch`, `team_approval_mismatch`, `team_lint_failed`, `team_mapping_incomplete`) sind in [team-mode.md](team-mode.md) erklärt.
 
 ## Befehlsflächen
 
@@ -200,6 +209,7 @@ Exit 0 bei null Fehlern, sonst 1; Ergebnis mit `ok`, `errors`, `warnings`, `stat
 ```text
 release --target RAUM --bump initial|patch|minor|major --operation-id 32-HEX
         --summary ZUSAMMENFASSUNG --actor AKTEUR --token-file DATEI
+        [--session-file DATEI]
 verify  --target RAUM
 ```
 
@@ -216,8 +226,8 @@ start     --target RAUM --actor AKTEUR --runtime VERZ
 preview   --run-id LAUF --actor AKTEUR --target RAUM --runtime VERZ
 approve   --run-id LAUF --actor AKTEUR --preview-file DATEI --runtime VERZ
 submit    --run-id LAUF --actor AKTEUR --target RAUM --preview-file DATEI
-          --approval-file DATEI --runtime VERZ
-publish   --run-id LAUF --actor AKTEUR --target RAUM --runtime VERZ
+          --approval-file DATEI [--session-file DATEI] --runtime VERZ
+publish   --run-id LAUF --actor AKTEUR --target RAUM [--session-file DATEI] --runtime VERZ
 sync      --target RAUM --token-file DATEI --runtime VERZ
 read      --target RAUM
 read-run  --run-id LAUF --runtime VERZ
@@ -237,8 +247,17 @@ check --worktree VERZ --base-sha 40-HEX --pr-body-file DATEI --actor-github-id I
 
 Läuft im Beratung-Workflow auf der PR: Akteurs-Abbildung, Operation-Block, Diff-Pfade, Lint, Secrets-Scan.
 
+### `secret_screen.py` (interne Hilfs-CLI)
+
+```text
+scan   --file DATEI
+redact --file DATEI --output DATEI
+```
+
+Prüft Text auf mutmaßliche Zugangsdaten (GitHub-/OpenAI-/AWS-/Slack-Tokens, Private-Key-Blöcke, `Bearer`-Tokens, `key=…`/`password=…`-Zuweisungen). `scan` meldet Trefferanzahl und Arten, `redact` ersetzt Treffer durch `[credential removed]`. Wird intern von Init, Posts, Lint, Release und dem Team-Workflow aufgerufen; `secrets_found` verweigert Schreiboperationen.
+
 ## Idempotenz und Operation-IDs
 
 - Jede schreibende Aktion trägt eine UUID-4 als `op` (Plan) bzw. `--operation-id` (Release).
 - Release mit bereits veröffentlichter `operation-id` liefert `already_published` plus Version, ohne neuen Bump.
-- Wiederholte `apply` desselben Plans schlägt mit `file_exists`/Precondition-Fehlern fehl – Pläne sind einmalig.
+- Wiederholtes `apply` desselben Plans schlägt mit `stale_plan` fehl (Create- bzw. Update-Voraussetzungen sind verletzt) – Pläne sind einmalig.

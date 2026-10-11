@@ -75,6 +75,15 @@ class InitTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(out["error"], "secrets_found")
 
+    def test_reapplying_same_plan_refused(self):
+        # Ein Plan ist einmalig: die Create-Voraussetzungen (Datei darf nicht
+        # existieren) sind nach dem ersten Apply verletzt -> stale_plan, null Schreibvorgänge.
+        plan = json.loads((self.rt / "plan.json").read_text(encoding="utf-8"))
+        code, out = S.run("collab_init.py", "apply", "--target", self.wiki, "--plan-file", self.rt / "plan.json",
+                          "--expect-plan-sha256", plan["plan_sha256"], "--token-file", self.rt / "tok.json")
+        self.assertEqual(code, 1)
+        self.assertEqual(out["error"], "stale_plan")
+
     def test_lock_released_after_release(self):
         code, out = S.run("wiki_lock.py", "release", "--target", self.wiki, "--token-file", self.rt / "tok.json")
         self.assertEqual(code, 0)

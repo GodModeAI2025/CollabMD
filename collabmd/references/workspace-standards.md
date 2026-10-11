@@ -37,7 +37,7 @@ Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/r
   "language": "de",
   "language_label": "Deutsch",
   "created": "2026-10-10T12:00:00Z",
-  "auth": {"write_gate": true, "kdf": "pbkdf2-sha256"}
+  "auth": {"write_gate": true, "kdf": "pbkdf2-sha256", "iterations": 600000}
 }
 ```
 
@@ -56,7 +56,8 @@ Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/r
       "name": "Anzeige-Name",
       "role": "owner",
       "disabled": false,
-      "joined": "2026-10-10T12:00:00Z",
+      "created": "2026-10-10T12:00:00Z",
+      "github_id": null,
       "auth": {"kdf": "pbkdf2-sha256", "iterations": 600000, "salt": "<64 hex>", "hash": "<64 hex>"}
     }
   }
@@ -67,8 +68,28 @@ Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/r
 - `role` ist genau eines von: `owner`, `maintainer`, `contributor`, `reader` (Reihenfolge = absteigende Berechtigung).
 - Mindestens ein nicht deaktivierter `owner` muss immer existieren.
 - `disabled: true` entzieht alle Rechte (kein Session, keine Aktionen); der Eintrag bleibt als Historie.
-- `auth` ist optional bei reinen Lese-Mitgliedern; fehlt es, kann keine Session erstellt werden.
+- `created` ist der Beitrittszeitpunkt; `github_id` ist optional (positive Zahl) und informativ — die verbindliche Team-Abbildung liegt in `schema/team.json` unter `github_ids`.
+- `auth` ist optional bei reinen Lese-Mitgliedern; fehlt es, kann keine Session erstellt werden. Bei vorhandenem `auth` prüft das Lint `kdf` (`pbkdf2-sha256`), Salt/Hash (je 64 hex) und `iterations` (>= 100 000).
 - Im Klartext kommt eine Passphrase nie in diese Datei, in Pläne, Events oder Berichte.
+
+## `schema/team.json` (nur im Teammodus)
+
+```json
+{
+  "format": "collabmd-team/1",
+  "provider": "github",
+  "repo": "godmodeai/teamraum",
+  "branch": "main",
+  "enforcement": "trusted-writers-beta",
+  "github_ids": {"alice": "1001", "bob": "1002"},
+  "setup_at": "2026-10-10T12:00:00Z"
+}
+```
+
+- `provider`: `github` (privates Repository) oder `local` (lokaler Bare-Remote, z. B. für Luftlücken-Setups).
+- `github_ids`: verbindliche Abbildung der aktiven Mitglieder auf stabile numerische IDs; jede aktive Mitgliedschaft muss abgebildet sein (sonst `team_mapping_incomplete`), keine doppelten IDs.
+- `enforcement`: aktuell nur `trusted-writers-beta` (siehe [team-mode.md](team-mode.md)).
+- Das File entsteht ausschließlich durch `team_git.py setup` und wird wie jede andere Datei über Plan/Apply geschrieben; Läufe lesen es nur.
 
 ## `schema/channels.json`
 
@@ -77,19 +98,26 @@ Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/r
   "format": "collabmd/1",
   "channels": {
     "general": {
+      "name": "general",
       "title": "Allgemein",
       "type": "public",
-      "purpose": "Zweck (optional)",
+      "purpose": "Gemeinsamer Kanal",
       "members": ["alice"],
+      "created_by": "alice",
+      "created": "2026-10-10T12:00:00Z",
       "archived": false,
-      "created": "2026-10-10T12:00:00Z"
+      "archived_at": null
     },
     "dm-alice-bob": {
+      "name": "dm-alice-bob",
       "title": "Alice ↔ Bob",
       "type": "direct",
+      "purpose": "",
       "members": ["alice", "bob"],
+      "created_by": "bob",
+      "created": "2026-10-10T12:00:00Z",
       "archived": false,
-      "created": "2026-10-10T12:00:00Z"
+      "archived_at": null
     }
   }
 }
@@ -98,9 +126,10 @@ Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/r
 - Kanal-ID: `^[a-z0-9][a-z0-9-]{1,62}$`.
 - `type` ist genau eines von: `public`, `private`, `direct`.
 - `direct`-Kanäle haben exakt zwei Mitglieder und die deterministische ID `dm-<handle-a>-<handle-b>` (handles alphabetisch sortiert).
-- `private`-Kanäle: Beitritt nur durch `maintainer`/`owner`; der Inhalt ist nur durch den Skill-Ablauf geschützt, nicht durch das Repository (siehe SKILL.md, Grenzen).
-- `archived: true` sperrt neue Posts; bestehende bleiben lesbar.
-- Jeder Kanal hat mindestens ein aktives Mitglied; der letzte verbleibende Maintainer kann ihn nicht verlassen.
+- `name` deckt sich mit der Kanal-ID; `title` ist Pflicht und eindeutig (Case-insensitive).
+- `private`-Kanäle: Beitritt nur durch `maintainer` (Aktion `channels.join-private`); der Inhalt ist nur durch den Skill-Ablauf geschützt, nicht durch das Repository (siehe SKILL.md, Grenzen).
+- `archived: true` sperrt neue Posts; bestehende bleiben lesbar; dann muss `archived_at` ein gültiger Zeitstempel sein.
+- Jeder Kanal hat mindestens ein Mitglied ohne Duplikate; der letzte verbleibende Mitgliedskanal kann nicht verlassen werden (`last_member`).
 
 ## Posts (`posts/<kanal-id>/<post-id>.md`)
 
@@ -167,16 +196,16 @@ Jede Anwendung eines Plans schreibt exakt eine Ereignis-Datei, benannt nach der 
 ```markdown
 ---
 type: event
-id: <operation-uuid>
-action: posts.create
+op: 2cdc31ca47d6436bb3bcdd926864322a
 actor: alice
 created: 2026-10-10T19:45:32Z
 ---
-post.created channel=general id=2cdc...
+- post.created channel=general id=2cdc...
 ```
 
-- Append-only: Ereignisse werden nie geändert oder gelöscht.
-- Die Zeile im Body ist die maschinenlesbare Kurzform `verb k=v ...`; `verb` leitet sich von der `action` ab (z. B. `posts.edit` → `post.edited`).
+- Dateiname = Operations-ID des Plans (UUID-4-Hex), Deckblattfeld `op` gleich.
+- Der Body ist eine Aufzählung: eine Zeile `- verb k=v …` pro Operation; `verb` leitet sich von der Plan-Aktion ab (z. B. `posts.edit` → `post.edited`).
+- Append-only: Ereignisse werden nie geändert oder gelöscht; eine erneut geplante Operation mit gleicher `op` schlägt mit `event_exists` fehl.
 - Ereignisse sind die Audit-Quelle; `meta/changes.md` ist die menschenlesbare Ergänzung.
 
 ## Lese-Stände (`meta/cursors/<handle>.json`)
@@ -197,14 +226,16 @@ post.created channel=general id=2cdc...
 
 ## `meta/changes.md`
 
-Menschenlesbares, Append-only-Tagbuch. Jede Session-Zusammenfassung (Init, Release, größere Änderungen) hängt eine Zeile an:
+Menschenlesbares, Append-only-Tagbuch. Die Datei beginnt mit `# Änderungen` und jede Änderung hängt eine Listezeile an:
 
 ```markdown
-## 2026-10-10T19:45:32Z — alice — release 0.1.0
-Erstes Release: Raum mit 2 Kanälen veröffentlicht.
+# Änderungen
+
+- 2026-10-10T19:45:32Z alice init
+- 2026-10-10T19:50:00Z alice release 0.1.0
 ```
 
-Format ist frei im Body; die Kopfzeile beginnt mit `## <ts> — <handle> — <beschreibung>`.
+Zeilenformat: `- <ISO-Zeitstempel> <handle> <aktion> [detail]`.
 
 ## Version und Manifest
 
