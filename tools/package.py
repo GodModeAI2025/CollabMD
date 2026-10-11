@@ -14,7 +14,12 @@ def build():
     if not (SKILL_DIR / "SKILL.md").is_file():
         print("collabmd/SKILL.md not found; nothing to package", file=sys.stderr)
         return 1
-    files = sorted(p for p in SKILL_DIR.rglob("*") if p.is_file())
+    files = sorted(
+        p for p in SKILL_DIR.rglob("*")
+        if p.is_file()
+        and "__pycache__" not in p.parts
+        and p.suffix != ".pyc"
+    )
     if not files:
         print("skill directory is empty", file=sys.stderr)
         return 1
