@@ -195,7 +195,7 @@ members    --target RAUM
 build --target RAUM --actor AKTEUR --token-file DATEI
 ```
 
-Erzeugt `graph/index.html`, `graph/members.html`, je Kanal `graph/channel-<id>.html` und `graph/graph.json`.
+Erzeugt `graph/index.html`, `graph/members.html`, je Kanal `graph/channels/<id>/index.html` und `graph/graph.json`.
 
 ### `collab_lint.py`
 

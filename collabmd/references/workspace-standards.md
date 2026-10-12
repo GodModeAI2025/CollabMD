@@ -21,11 +21,11 @@ meta/
   version          aktuelle Release-Version (SemVer)
   manifest.json    Manifest des letzten Releases
   receipts/        <operation-id>.json: Idempotenz-Beleg
-graph/             generierte Views (index.html, members.html, channel-*.html, graph.json); nie von Hand bearbeiten
+graph/             generierte Views (index.html, members.html, channels/<id>/index.html, graph.json); nie von Hand bearbeiten
 .collabmd.lock/    claim.json der Raumsperre (nur während eines Wartens)
 ```
 
-Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/receipts/`, `graph/` tragen einen `.gitkeep`, damit leere Verzeisnisse im Git verbleiben.
+Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/receipts/`, `graph/` tragen einen `.gitkeep`, damit leere Verzeichnisse im Git verbleiben.
 
 ## `schema/collab.json`
 
@@ -260,9 +260,9 @@ Zeilenformat: `- <ISO-Zeitstempel> <handle> <aktion> [detail]`.
 
 ## `graph/` (generiert)
 
-- `index.html`, `members.html`, `channel-<id>.html`, `graph.json` — erzeugt von `collab_build.py build`, nie von Hand bearbeitet.
+- `index.html`, `members.html`, `channels/<id>/index.html` (je Kanal), `graph.json` — erzeugt von `collab_build.py build`, nie von Hand bearbeitet.
 - `graph.json` ist die maschinenlesbare Übersicht: Raum, Mitglieder, Kanäle, Posts (ID, Kanal, Autor, Erstellt, Thread-Root, Pinnung, Reaktionen, Anhänge, Ungelesen-Zeilen).
-- Ein Build ist ein Schreibvorgang mit Sperre und Auth-Session (Aktion `graph.build`), aktualisiert aber keine Inhalte der Quelle.
+- Ein Build ist ein Schreibvorgang mit Sperre, aber ohne Auth-Session (Aktion `graph.build` liegt außerhalb des Schreib-Gates); er aktualisiert keine Inhalte der Quelle.
 
 ## Namens- und Inhaltsregeln
 
