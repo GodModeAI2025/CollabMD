@@ -9,9 +9,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import support as S
 
 
-def add_member(wiki, rt, token, sess, handle="bob"):
+def add_member(wiki, rt, token, sess, handle="bob", role="contributor"):
     code, out = S.run("collab_auth.py", "create-user", "--target", wiki, "--handle", handle,
-                      "--role", "contributor", "--passphrase-file", rt / "pp.txt",
+                      "--role", role, "--passphrase-file", rt / "pp.txt",
                       "--actor", "alice", "--token-file", token,
                       "--content-dir", rt / "c", "--output", rt / f"plan-{handle}.json")
     assert code == 0, out
@@ -30,11 +30,11 @@ class ChannelTests(unittest.TestCase):
         self.sess = S.session(self.rt, self.wiki, "alice")
         add_member(self.wiki, self.rt, self.token, self.sess)
 
-    def create_channel(self, channel_id="product", title="Produkt", ctype="public", actor="alice", sess=None):
+    def create_channel(self, channel_id="product", title="Produkt", ctype="public", actor="alice", sess=None, members="alice,bob"):
         sess = sess or self.sess
         code, out = S.run("collab_channels.py", "plan", "--action", "channels.create",
                           "--target", self.wiki, "--id", channel_id, "--title", title, "--type", ctype,
-                          "--members", "alice,bob", "--actor", actor,
+                          "--members", members, "--actor", actor,
                           "--content-dir", self.rt / "c", "--output", self.rt / f"plan-{channel_id}.json")
         self.assertEqual(code, 0, out)
         plan = json.loads((self.rt / f"plan-{channel_id}.json").read_text(encoding="utf-8"))
@@ -83,6 +83,51 @@ class ChannelTests(unittest.TestCase):
         text = (self.wiki / "posts" / "product" / f"{post_id}.md").read_text(encoding="utf-8")
         self.assertIn("deleted: true", text)
         self.assertIn("[gelöscht]", text)
+
+    def test_private_join_requires_maintainer(self):
+        self.create_channel("team", "Team", "private", actor="alice", sess=self.sess, members="alice")
+        # contributors are refused (checked at plan stage)
+        code, out = S.run("collab_channels.py", "plan", "--action", "channels.join",
+                          "--target", self.wiki, "--id", "team", "--actor", "bob",
+                          "--content-dir", self.rt / "c", "--output", self.rt / "plan-join-bob.json")
+        self.assertEqual(code, 1)
+        self.assertEqual(out["error"], "permission_denied")
+        # a maintainer may join
+        add_member(self.wiki, self.rt, self.token, self.sess, handle="carol", role="maintainer")
+        code, out = S.run("collab_channels.py", "plan", "--action", "channels.join",
+                          "--target", self.wiki, "--id", "team", "--actor", "carol",
+                          "--content-dir", self.rt / "c", "--output", self.rt / "plan-join-carol.json")
+        self.assertEqual(code, 0, out)
+        plan = json.loads((self.rt / "plan-join-carol.json").read_text(encoding="utf-8"))
+        code, out = S.run("collab_channels.py", "apply", "--target", self.wiki,
+                          "--plan-file", self.rt / "plan-join-carol.json",
+                          "--expect-plan-sha256", plan["plan_sha256"], "--token-file", self.token,
+                          "--session-file", S.session(self.rt, self.wiki, "carol"))
+        self.assertEqual(code, 0, out)
+        channels = json.loads((self.wiki / "schema/channels.json").read_text(encoding="utf-8"))
+        self.assertEqual(channels["channels"]["team"]["members"], ["alice", "carol"])
+
+    def test_last_member_cannot_leave(self):
+        self.create_channel("solo", "Solo", "public", actor="alice", sess=self.sess, members="alice")
+        code, out = S.run("collab_channels.py", "plan", "--action", "channels.leave",
+                          "--target", self.wiki, "--id", "solo", "--actor", "alice",
+                          "--content-dir", self.rt / "c", "--output", self.rt / "plan-leave-solo.json")
+        self.assertEqual(code, 1)
+        self.assertEqual(out["error"], "last_member")
+
+    def test_contributor_cannot_edit_others_post(self):
+        self.create_channel()
+        code, out, plan = S.post_plan(self.wiki, self.rt, "create", "product", "alice", "Alice Post\n", self.token, self.sess)
+        self.assertEqual(code, 0, out)
+        post_id = plan["post_id"]
+        body = self.rt / "body-bob-edit.txt"
+        body.write_text("Bob editiert\n", encoding="utf-8")
+        code, out = S.run("collab_posts.py", "plan", "--op", "edit", "--target", self.wiki,
+                          "--channel", "product", "--post", post_id, "--body-file", body,
+                          "--actor", "bob", "--content-dir", self.rt / "c",
+                          "--output", self.rt / "plan-bob-edit.json")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(out["error"], "permission_denied")
 
     def test_nonmember_cannot_post(self):
         self.create_channel()

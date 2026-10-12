@@ -319,7 +319,7 @@ def require_permission(members_doc, actor, action, ctx=None):
         minimum = "owner"
     elif action == "members.update-profile":
         minimum = None if ctx.get("self") else "maintainer"
-    elif action in ("auth.create-user", "channels.create", "channels.rename", "channels.archive", "channels.unarchive", "channels.join-private"):
+    elif action in ("auth.create-user", "channels.create", "channels.rename", "channels.archive", "channels.unarchive"):
         minimum = "maintainer"
     elif action in ("posts.edit-other", "posts.delete-other", "posts.pin-other", "posts.unpin-other"):
         minimum = "maintainer"

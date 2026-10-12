@@ -254,6 +254,50 @@ def check_events(ws, errors, warnings, members):
             errors.append(f"meta/events/{path.name}: created ungültig")
 
 
+def check_cursors(ws, errors, warnings, members, channels):
+    if not ws.cursors_dir.is_dir():
+        return
+    for path in sorted(ws.cursors_dir.iterdir()):
+        if not path.is_file() or path.suffix != ".json":
+            if path.suffix != ".json" and path.name != ".gitkeep":
+                errors.append(f"meta/cursors/{path.name}: unerwartete Datei (erwartet <handle>.json)")
+            continue
+        rel = f"meta/cursors/{path.name}"
+        try:
+            handle = C.validate_handle(path.stem)
+        except C.CollabError:
+            errors.append(f"{rel}: Dateiname ist kein gültiger Handle")
+            continue
+        try:
+            doc = C.read_json(path)
+        except C.CollabError as exc:
+            errors.append(f"{rel}: {exc.message}")
+            continue
+        if doc.get("handle") != handle:
+            errors.append(f"{rel}: handle-Feld weicht vom Dateinamen ab")
+        if handle not in members:
+            errors.append(f"{rel}: unbekanntes Mitglied {handle!r}")
+        chans = doc.get("channels")
+        if not isinstance(chans, dict):
+            errors.append(f"{rel}: channels muss ein Objekt sein")
+            continue
+        for channel_id, entry in sorted(chans.items()):
+            try:
+                C.validate_channel_id(channel_id)
+            except C.CollabError:
+                errors.append(f"{rel}: ungültige Kanal-ID {channel_id!r}")
+                continue
+            if channel_id not in channels:
+                errors.append(f"{rel}: unbekannter Kanal {channel_id!r}")
+                continue
+            if not isinstance(entry, dict):
+                errors.append(f"{rel}/{channel_id}: Eintrag muss ein Objekt sein")
+                continue
+            for field in ("cursor", "updated"):
+                if not C.parse_iso(entry.get(field)):
+                    errors.append(f"{rel}/{channel_id}: {field} ungültig")
+
+
 def check_version_manifest(ws, errors):
     version_path = ws.meta / "version"
     version = None
@@ -311,6 +355,7 @@ def run_lint(ws):
     posts = check_posts(ws, errors, warnings, members, channels)
     check_files(ws, errors, warnings, posts)
     check_events(ws, errors, warnings, members)
+    check_cursors(ws, errors, warnings, members, channels)
     check_version_manifest(ws, errors)
     check_secrets(ws, errors)
     stats = {

@@ -127,9 +127,9 @@ Leerhaltung: `posts/`, `posts/_files/`, `meta/events/`, `meta/cursors/`, `meta/r
 - `type` ist genau eines von: `public`, `private`, `direct`.
 - `direct`-Kanäle haben exakt zwei Mitglieder und die deterministische ID `dm-<handle-a>-<handle-b>` (handles alphabetisch sortiert).
 - `name` deckt sich mit der Kanal-ID; `title` ist Pflicht und eindeutig (Case-insensitive).
-- `private`-Kanäle: Beitritt nur durch `maintainer` (Aktion `channels.join-private`); der Inhalt ist nur durch den Skill-Ablauf geschützt, nicht durch das Repository (siehe SKILL.md, Grenzen).
+- `private`-Kanäle: Beitritt (`channels.join`) nur für Akteure mit mindestens Rolle `maintainer`; der Inhalt ist nur durch den Skill-Ablauf geschützt, nicht durch das Repository (siehe SKILL.md, Grenzen).
 - `archived: true` sperrt neue Posts; bestehende bleiben lesbar; dann muss `archived_at` ein gültiger Zeitstempel sein.
-- Jeder Kanal hat mindestens ein Mitglied ohne Duplikate; der letzte verbleibende Mitgliedskanal kann nicht verlassen werden (`last_member`).
+- Jeder Kanal hat mindestens ein Mitglied ohne Duplikate; das letzte Mitglied kann den Kanal nicht verlassen (`last_member`) – stattdessen archivieren.
 
 ## Posts (`posts/<kanal-id>/<post-id>.md`)
 

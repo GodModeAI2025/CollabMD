@@ -35,8 +35,8 @@ Rollenreihenfolge (absteigend): `owner` > `maintainer` > `contributor` > `reader
 | `posts.edit-other`, `posts.delete-other`, `posts.pin-other`, `posts.unpin-other` | `maintainer` | fremde Posts |
 | `channels.create` | `maintainer` | Akteur wird Mitglied |
 | `channels.rename`, `channels.archive`, `channels.unarchive` | `maintainer` | |
-| `channels.join` | `contributor` | in `private`-Kanäle: `maintainer` (Aktion `channels.join-private`) |
-| `channels.leave` | Kanal-Mitglied | letzter `maintainer`/`owner` kann nicht verlassen |
+| `channels.join` | `contributor` | in `private`-Kanäle zusätzlich: Akteur mindestens `maintainer` (gleiche Aktion) |
+| `channels.leave` | Kanal-Mitglied | letztes Mitglied kann nicht verlassen (`last_member`), stattdessen archivieren |
 | `members.update-profile` (eigener Name) | eigenes Mitglied | |
 | `members.update-profile-other` | `maintainer` | |
 | `auth.create-user` | `maintainer` | beim ersten Mitglied entfällt das Schreib-Gate (Session) |

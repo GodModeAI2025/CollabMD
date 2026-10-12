@@ -51,7 +51,7 @@ Kurz: **trusted-writers-beta** setzt vertrauenswürdige Repository-Schreiber vor
 - **Striktes Lint**: Validates Profil, Mitglieder, Kanäle, Posts, Threads, Reaktionen, Anhänge, Ereignisse, Cursor, Version/Manifest und Secrets; repariert nichts, meldet; Exit 1 bei Fehlern.
 - **Releases**: SemVer-Bump (`initial`/`patch`/`minor`/`major`), Manifest mit SHA-256 aller kontrollierten Dateien, `verify` für Read-only-Prüfung, Idempotenz über Operation-IDs.
 - **CI**: `.github/workflows/check.yml` führt bei jedem Push/PR alle Regressionssuiten aus und prüft, dass das committete Skill-Paket zum aktuellen Stand passt (rebuild + SHA-256).
-- **Regressionstests**: Offline, synthetische Daten, unter `qa/tests/` (Smoke, Init, Auth, Chats, Threads/DM, Suche/Anhänge, Releases, Team-Contract, Team-Local).
+- **Regressionstests**: Offline, synthetische Daten, unter `qa/tests/` (Smoke, Init, Auth, Chats, Threads/DM, Suche/Anhänge, Lint, Releases, Team-Contract, Team-Local).
 - **Paket**: `tools/package.py` erzeugt ein deterministisches `dist/collabmd.skill` (ZIP) plus `.sha256`.
 
 ## Grenzen (bewusst)
