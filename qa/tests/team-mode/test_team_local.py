@@ -143,6 +143,72 @@ class TeamLocalTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(out["error"], "team_lint_failed")
 
+    def test_preview_reports_operations(self):
+        run_id, staging = self.start_run("alice")
+        self.stage_post(run_id, staging, "alice", "general", "Preview-Post\n", self.sess)
+        code, pv = S.run("team_git.py", "preview", "--run-id", run_id, "--actor", "alice",
+                         "--target", self.wiki, "--runtime", self.rt_base)
+        self.assertEqual(code, 0, pv)
+        self.assertGreaterEqual(pv["operations"], 1)
+        preview = json.loads(Path(pv["preview_file"]).read_text(encoding="utf-8"))
+        actions = [op.get("action") for op in preview["operations"]]
+        self.assertIn("post.created", actions)
+        self.assertTrue(all(op.get("actor") == "alice" for op in preview["operations"]))
+
+    def test_integrity_check_reports_new_events(self):
+        import subprocess
+        run_id, staging = self.start_run("alice")
+        self.stage_post(run_id, staging, "alice", "general", "Integrity-Post\n", self.sess)
+        code, pv = S.run("team_git.py", "preview", "--run-id", run_id, "--actor", "alice",
+                         "--target", self.wiki, "--runtime", self.rt_base)
+        self.assertEqual(code, 0, pv)
+        code, ap = S.run("team_git.py", "approve", "--run-id", run_id, "--actor", "alice",
+                         "--preview-file", pv["preview_file"], "--runtime", self.rt_base)
+        self.assertEqual(code, 0, ap)
+        state = json.loads((self.rt_base / "collabmd-runs" / run_id / "state.json").read_text(encoding="utf-8"))
+        base_sha = state["base_revision"]
+        subprocess.run(["git", "-C", str(staging), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(staging), "-c", "user.name=integrity",
+                        "-c", "user.email=integrity@local", "commit", "-q", "-m", "integrity-test"], check=True)
+        body = ("collabmd-op/1\n"
+                f"operation-id: {ap['approval_id']}\n"
+                "actor: alice\n"
+                f"base-revision: {base_sha}\n"
+                f"preview-sha256: {pv['preview_sha256']}\n")
+        body_file = self.rt / "pr-body.md"
+        body_file.write_text(body, encoding="utf-8")
+        code, out = S.run("team_integrity.py", "check", "--worktree", staging,
+                          "--base-sha", base_sha, "--pr-body-file", body_file,
+                          "--actor-github-id", "1000")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["actor"], "alice")
+        self.assertIn("post.created", out["events"])
+
+    def test_integrity_check_rejects_unknown_author(self):
+        import subprocess
+        run_id, staging = self.start_run("alice")
+        self.stage_post(run_id, staging, "alice", "general", "Integrity-Post\n", self.sess)
+        code, pv = S.run("team_git.py", "preview", "--run-id", run_id, "--actor", "alice",
+                         "--target", self.wiki, "--runtime", self.rt_base)
+        self.assertEqual(code, 0, pv)
+        state = json.loads((self.rt_base / "collabmd-runs" / run_id / "state.json").read_text(encoding="utf-8"))
+        base_sha = state["base_revision"]
+        subprocess.run(["git", "-C", str(staging), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(staging), "-c", "user.name=integrity",
+                        "-c", "user.email=integrity@local", "commit", "-q", "-m", "integrity-test"], check=True)
+        body = ("collabmd-op/1\n"
+                "operation-id: " + "0" * 32 + "\n"
+                "actor: alice\n"
+                f"base-revision: {base_sha}\n"
+                f"preview-sha256: {pv['preview_sha256']}\n")
+        body_file = self.rt / "pr-body-unknown.md"
+        body_file.write_text(body, encoding="utf-8")
+        code, out = S.run("team_integrity.py", "check", "--worktree", staging,
+                          "--base-sha", base_sha, "--pr-body-file", body_file,
+                          "--actor-github-id", "9999")
+        self.assertEqual(code, 1)
+        self.assertEqual(out["error"], "integrity_actor_unknown")
+
     def test_recover_and_cleanup(self):
         run_id, staging = self.start_run("alice")
         self.stage_post(run_id, staging, "alice", "general", "Offener Lauf\n", self.sess)

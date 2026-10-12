@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Server-side integrity check for CollabMD team PRs (advisory on GitHub Free)."""
 import argparse
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -13,9 +12,6 @@ import collabmd_common as C
 import collab_lint
 import secret_screen
 import team_contract as T
-
-EVENT_RE = re.compile(r"^action:\s*(\S+)", re.M)
-
 
 def diff_names(base_sha, cwd):
     out = subprocess.run(["git", "diff", "--name-only", base_sha, "HEAD"], capture_output=True, text=True, cwd=str(cwd))
@@ -57,10 +53,14 @@ def check(worktree, base_sha, body_text, actor_github_id):
     if findings:
         raise C.CollabError("integrity_secrets_found", f"{len(findings)} mutmaßliche Zugangsdaten in der diff")
     events = []
-    for path in sorted(ws.events_dir.glob("*.md")):
-        match = EVENT_RE.search(path.read_text(encoding="utf-8"))
-        if match:
-            events.append(match.group(1))
+    for rel in sorted(p for p in paths if p.startswith("meta/events/") and p.endswith(".md")):
+        fpath = ws.safe_rel(rel)
+        if fpath is None or not fpath.is_file():
+            continue
+        for line in fpath.read_text(encoding="utf-8").splitlines():
+            if line.startswith("- "):
+                events.append(line[2:].split(" ", 1)[0])
+                break
     return {
         "ok": True,
         "actor": fields["actor"],

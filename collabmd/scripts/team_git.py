@@ -227,12 +227,17 @@ def do_preview(args):
     staged = workspace_files(staging)
     changed = {rel: digest for rel, digest in staged.items() if base_hashes.get(rel) != digest}
     operations = []
-    for path in sorted((staging / "meta" / "events").glob("*")):
-        if path.suffix == ".md":
-            text = path.read_text(encoding="utf-8")
-            m = re.search(r"^action:\s*(\S+)", text, re.M)
-            if m:
-                operations.append({"file": f"meta/events/{path.name}", "action": m.group(1)})
+    for rel in sorted(rel for rel in changed if rel.startswith("meta/events/") and rel.endswith(".md")):
+        try:
+            meta, body = C.parse_frontmatter((staging / rel).read_text(encoding="utf-8"))
+        except C.CollabError:
+            continue
+        verb = ""
+        for line in body.splitlines():
+            if line.startswith("- "):
+                verb = line[2:].split(" ", 1)[0]
+                break
+        operations.append({"file": rel, "actor": meta.get("actor"), "action": verb})
     preview = T.make_preview(state["base_revision"], args.actor, operations, changed)
     pfile = runs_dir(args.runtime) / state["run_id"] / "preview.json"
     C.write_json(pfile, preview)
