@@ -33,17 +33,18 @@ Rollenreihenfolge (absteigend): `owner` > `maintainer` > `contributor` > `reader
 | `posts.create` | `contributor` + Kanal-Mitglied | |
 | `posts.edit-self`, `posts.delete-self`, `posts.pin-self`, `posts.unpin-self` | Kanal-Mitglied (eigener Post) | |
 | `posts.edit-other`, `posts.delete-other`, `posts.pin-other`, `posts.unpin-other` | `maintainer` | fremde Posts |
+| `posts.react`, `posts.unreact` | Kanal-Mitglied | egal, wem der Post gehört |
 | `channels.create` | `maintainer` | Akteur wird Mitglied |
 | `channels.rename`, `channels.archive`, `channels.unarchive` | `maintainer` | |
 | `channels.join` | `contributor` | in `private`-Kanäle zusätzlich: Akteur mindestens `maintainer` (gleiche Aktion) |
 | `channels.leave` | Kanal-Mitglied | letztes Mitglied kann nicht verlassen (`last_member`), stattdessen archivieren |
 | `members.update-profile` (eigener Name) | eigenes Mitglied | |
-| `members.update-profile-other` | `maintainer` | |
+| `members.update-profile` (Name eines anderen) | `maintainer` | |
 | `auth.create-user` | `maintainer` | beim ersten Mitglied entfällt das Schreib-Gate (Session) |
 | `auth.change-passphrase-self` | eigenes Mitglied | |
 | `auth.reset-passphrase`, `auth.disable-user`, `auth.enable-user` | `owner` | |
 | `graph.build` | aktives Mitglied | |
-| `release.publish` | `owner` | |
+| `release.publish` | `contributor` | zusätzlich: Sperre, Session, Lint ohne Fehler |
 | `init` | — | nur ins leere Ziel, ohne Mitglieder |
 
 ## Authentifizierung und Schreib-Gate
@@ -212,6 +213,8 @@ release --target RAUM --bump initial|patch|minor|major --operation-id 32-HEX
         [--session-file DATEI]
 verify  --target RAUM
 ```
+
+`release` benötigt Sperre und Session, verweigert bei Lint-Fehlern (`lint_failed`) und schreibt `meta/version`, eine `changes.md`-Zeile, `meta/manifest.json` und den Idempotenz-Beleg `meta/receipts/<operation-id>.json`. Kontrollierte Dateien im Manifest: `schema/collab.json`, `schema/SOUL.md`, `schema/members.json`, `schema/channels.json`, `meta/version`, `meta/changes.md` plus sämtliche Dateien unter `schema/`, `posts/` und `meta/events/` (je SHA-256). Cursoren, Belege und `graph/` sind nicht kontrolliert. `verify` arbeitet read-only ohne Sperre und meldet `ok`, `checked`, `missing`, `mismatched` sowie die Versions-Abweichung (`workspace_version`).
 
 ### `team_git.py` (Teammodus)
 

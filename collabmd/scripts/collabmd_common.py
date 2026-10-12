@@ -315,7 +315,7 @@ def require_permission(members_doc, actor, action, ctx=None):
     ctx = ctx or {}
     if action == "init":
         return role
-    if action in ("auth.reset-passphrase", "auth.disable-user", "auth.enable-user", "team.setup", "team.membership"):
+    if action in ("auth.reset-passphrase", "auth.disable-user", "auth.enable-user", "team.setup"):
         minimum = "owner"
     elif action == "members.update-profile":
         minimum = None if ctx.get("self") else "maintainer"

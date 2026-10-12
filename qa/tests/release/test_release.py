@@ -80,6 +80,33 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(out["error"], "auth_required")
 
+    def add_member(self, handle, role):
+        code, out = S.run("collab_auth.py", "create-user", "--target", self.wiki, "--handle", handle,
+                          "--role", role, "--passphrase-file", self.rt / "pp.txt",
+                          "--actor", "alice", "--token-file", self.token,
+                          "--content-dir", self.rt / "c", "--output", self.rt / f"plan-{handle}.json")
+        self.assertEqual(code, 0, out)
+        plan = json.loads((self.rt / f"plan-{handle}.json").read_text(encoding="utf-8"))
+        code, out = S.run("collab_auth.py", "apply", "--target", self.wiki, "--handle", handle,
+                          "--plan-file", self.rt / f"plan-{handle}.json",
+                          "--expect-plan-sha256", plan["plan_sha256"], "--token-file", self.token,
+                          "--session-file", self.sess)
+        self.assertEqual(code, 0, out)
+
+    def test_contributor_can_publish_release(self):
+        self.add_member("bob", "contributor")
+        code, out, _ = release(self.wiki, self.rt, self.token, "initial", actor="bob",
+                               session=S.session(self.rt, self.wiki, "bob"))
+        self.assertEqual(code, 0, out)
+        self.assertEqual(out["version"], "0.1.0")
+
+    def test_reader_cannot_publish_release(self):
+        self.add_member("carol", "reader")
+        code, out, _ = release(self.wiki, self.rt, self.token, "initial", actor="carol",
+                               session=S.session(self.rt, self.wiki, "carol"))
+        self.assertEqual(code, 1)
+        self.assertEqual(out["error"], "permission_denied")
+
     def test_release_requires_lock(self):
         (self.rt / "tok-none.json").unlink(missing_ok=True)
         code, out, _ = release(self.wiki, self.rt, self.rt / "tok-none.json", "initial")
