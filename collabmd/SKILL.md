@@ -14,7 +14,7 @@ Wenn der Nutzer einen geteilten Git-Ablauf verlangt oder das Ziel `schema/team.j
 ## Regeln, die immer gelten
 
 1. Der Nutzer spricht mit diesem Skill in natürlicher Sprache. Verlange nie, dass der Nutzer Python, ein gebündeltes Skript oder ein Shell-Kommando selbst ausführt; die Helfer sind private Implementierungsdetails, die der aktive Agent ausführt und prüft.
-2. Jeder schreibende oder wartende Durchlauf besitzt die Raumsperre für seine gesamte Lebensdauer: Hole sie vor der Inspektion des Raums, halte die Token-Datei privat (0600, außerhalb des Raums) und gib sie am Ende mit dem eigenen Token zurück. Berühre nie den Claim eines anderen Warters; zwinge eine Sperre nicht ohne ausdrückliche Freigabe.
+2. Jeder schreibende Durchlauf besitzt die Raumsperre für seine gesamte Lebensdauer: Hole sie vor der Inspektion des Raums, halte die Token-Datei privat (0600, außerhalb des Raums) und gib sie am Ende mit dem eigenen Token zurück. Berühre nie den Claim eines anderen Warters; zwinge eine Sperre nicht ohne ausdrückliche Freigabe.
 3. Schreibe keine kanonische Datei direkt. Posts, Kanäle, Mitglieder und Auth-Änderungen laufen über hash-gebundene Plan/Apply-Helfer; Lese-Operationen lesen nur. Jede schreibende Operation außer `init`, `cursor.set` und `graph.build` benötigt eine gültige Auth-Session.
 4. Wende nur den exakten Plan an, den der Nutzer gesehen hat, identifiziert über seinen Plan-Hash. Ein veralteter Plan (`stale_plan`) bedeutet null Schreibvorgänge und einen neuen Plan, nie einen Umweg. Destruktive Operationen (Löschen, Archivieren, Deaktivieren, Zurücksetzen) brauchen ausdrückliche Bestätigung nach der Vorschau.
 5. Erfinde keine Fakten, Handles, Inhalte oder Ereignisse. Jede Änderung benennt ihren Akteur; der Ereignislog und `meta/changes.md` sind Append-only und werden nie außerhalb der Helfer verändert.
@@ -49,7 +49,7 @@ Behandle das Verzeichnis, das diese `SKILL.md` enthält, als `<skill-root>`. Neh
 
 ## Raumsperre
 
-Jeder schreibende oder wartende Aufruf – anlegen, ändern, Lint, Release, Query mit Cursor – muss für seine gesamte Lebensdauer den Claim auf dem Zielsververzeichnis besitzen. Lese-Queries ohne Schreibeffekt (`collab_query.py`, `collab_lint.py lint`, `collab_release.py verify`) arbeiten ohne Claim.
+Jeder schreibende Aufruf – anlegen, ändern (Posts, Kanäle, Mitglieder, Auth, Cursor), `graph.build`, Release – muss für seine gesamte Lebensdauer den Claim auf dem Zielverzeichnis besitzen. Lese-Operationen ohne Schreibeffekt (`collab_query.py`, `collab_lint.py lint`, `collab_release.py verify`) arbeiten ohne Claim.
 
 ```text
 <python> <skill-root>/scripts/wiki_lock.py acquire --target <raum> --owner <agent-oder-lauf-id> --operation <kurze-beschreibung> --token-file <private-laufzeitdatei>
